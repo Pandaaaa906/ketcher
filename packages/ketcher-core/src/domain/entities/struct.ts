@@ -981,30 +981,44 @@ export class Struct {
     // eslint-disable-line max-statements
     /* saver */
     const connectedComponents = this.findConnectedComponents(true)
-    const barriers: Array<any> = []
-    let arrowPos: number | null = null
+    const barriers: Array<number> = []
+    let arrowPosRange: Array<number> | null = null
 
     this.rxnArrows.forEach((item) => {
       // there's just one arrow
-      arrowPos = item.center().x
+      arrowPosRange = [item.pos[0].x, item.pos[1].x]
     })
 
     this.rxnPluses.forEach((item) => {
       barriers.push(item.pp.x)
     })
 
-    if (arrowPos !== null) barriers.push(arrowPos)
+    if (arrowPosRange !== null) {
+      barriers.push(arrowPosRange[0])
+      barriers.push(arrowPosRange[1])
+    }
 
     barriers.sort((a, b) => a - b)
 
     const components: Array<any> = []
-
+    let nAgents = 0
     connectedComponents.forEach((component) => {
       const bb = this.getCoordBoundingBox(component)
       const c = Vec2.lc2(bb.min, 0.5, bb.max, 0.5)
       let j = 0
 
-      while (c.x > barriers[j]) ++j
+      while (c.x > barriers[j]) {
+        ++j
+      }
+
+      if (arrowPosRange && arrowPosRange[0] <= c.x && c.x < arrowPosRange[1]) {
+        console.log(j, barriers)
+        barriers.splice(j, 0, barriers[j - 1])
+        ++nAgents
+        components[j + nAgents] = new Pile()
+        components[j + nAgents] = components[j + nAgents].union(component)
+        return
+      }
 
       components[j] = components[j] || new Pile()
       components[j] = components[j].union(component)
@@ -1012,6 +1026,7 @@ export class Struct {
 
     const submolTexts: Array<string> = []
     const reactants: Array<any> = []
+    const agents: Array<any> = []
     const products: Array<any> = []
 
     components.forEach((component) => {
@@ -1020,18 +1035,36 @@ export class Struct {
         return
       }
 
-      const rxnFragmentType = this.defineRxnFragmentTypeForAtomset(
+      const rxnFragmentType = this.defineRxnFragmentTypeForAtomsetByArrowRange(
         component,
-        arrowPos || 0
+        arrowPosRange || [0, 0]
       )
 
       if (rxnFragmentType === 1) reactants.push(component)
-      else products.push(component)
+      else if (rxnFragmentType === 2) products.push(component)
+      else agents.push(component)
     })
 
     return {
       reactants,
+      agents,
       products
+    }
+  }
+
+  defineRxnFragmentTypeForAtomsetByArrowRange(
+    atomset: Pile<number>,
+    arrowRange: Array<number>
+  ) {
+    const bb = this.getCoordBoundingBox(atomset)
+    const c = Vec2.lc2(bb.min, 0.5, bb.max, 0.5)
+    const [x1, x2] = arrowRange
+    if (c.x < x1) {
+      return 1
+    } else if (c.x < x2) {
+      return 3
+    } else {
+      return 2
     }
   }
 

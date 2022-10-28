@@ -130,14 +130,15 @@ export class Molfile {
 
       const reactants = components.reactants
       const products = components.products
-      const all = reactants.concat(products)
+      const agents = components.agents
+      const all = reactants.concat(products, agents)
       this.molfile =
         '$RXN\n' +
         molecule.name +
         '\n\n\n' +
         utils.paddedNum(reactants.length, 3) +
         utils.paddedNum(products.length, 3) +
-        utils.paddedNum(0, 3) +
+        utils.paddedNum(agents.length, 3) +
         '\n'
       for (let i = 0; i < all.length; ++i) {
         const saver = new Molfile()
