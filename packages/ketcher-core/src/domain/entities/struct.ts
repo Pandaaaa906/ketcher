@@ -1012,11 +1012,10 @@ export class Struct {
       }
 
       if (arrowPosRange && arrowPosRange[0] <= c.x && c.x < arrowPosRange[1]) {
-        console.log(j, barriers)
-        barriers.splice(j, 0, barriers[j - 1])
-        ++nAgents
         components[j + nAgents] = new Pile()
         components[j + nAgents] = components[j + nAgents].union(component)
+        barriers.splice(j, 0, barriers[j])
+        ++nAgents
         return
       }
 
